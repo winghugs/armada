@@ -12,8 +12,8 @@ fi
 
 POWER_SUPPLY_PATH="/sys/class/power_supply/"
 shopt -s nullglob
-CHARGE_EXTENSION_NUM=$(ls "$POWER_SUPPLY_PATH" | grep -i "bat" | wc -l | tr -d ' ')
-CHARGE_EXTENSION=$(ls "$POWER_SUPPLY_PATH" | grep -i "bat" | head -n 1)
+CHARGE_EXTENSION_NUM=$(ls "$POWER_SUPPLY_PATH" | grep -v "qcom" | grep -i "bat" | wc -l | tr -d ' ')
+CHARGE_EXTENSION=$(ls "$POWER_SUPPLY_PATH" | grep -v "qcom" | grep -i "bat" | head -n 1)
 LOWER_LIMIT=100000
 
 # Error handling first

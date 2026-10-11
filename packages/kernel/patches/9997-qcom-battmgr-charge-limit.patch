@@ -1,0 +1,128 @@
+ drivers/power/supply/qcom_battmgr.c | 68 +++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+
+diff --git a/drivers/power/supply/qcom_battmgr.c b/drivers/power/supply/qcom_battmgr.c
+--- a/drivers/power/supply/qcom_battmgr.c
++++ b/drivers/power/supply/qcom_battmgr.c
+@@ -194,6 +194,8 @@ struct qcom_battmgr_info {
+ 	unsigned int capacity_warning;
+ 	unsigned int cycle_count;
+ 	unsigned int charge_count;
++	unsigned int charge_control_limit;
++	unsigned int charge_control_limit_max;
+ 	char model_number[BATTMGR_STRING_LEN];
+ 	char serial_number[BATTMGR_STRING_LEN];
+ 	char oem_info[BATTMGR_STRING_LEN];
+@@ -323,6 +325,8 @@ static const u8 sm8350_bat_prop_map[] = {
+ 	[POWER_SUPPLY_PROP_TIME_TO_FULL_AVG] = BATTMGR_TTF_AVG,
+ 	[POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG] = BATTMGR_TTE_AVG,
+ 	[POWER_SUPPLY_PROP_POWER_NOW] = BATT_POWER_NOW,
++	[POWER_SUPPLY_PROP_CHARGE_CONTROL_END_THRESHOLD] = BATT_CHG_CTRL_LIM,
++	[POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX] = BATT_CHG_CTRL_LIM_MAX,
+ };
+ 
+ static int qcom_battmgr_bat_sm8350_update(struct qcom_battmgr *battmgr,
+@@ -499,6 +503,12 @@ static int qcom_battmgr_bat_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
+ 		val->strval = battmgr->info.serial_number;
+ 		break;
++	case POWER_SUPPLY_PROP_CHARGE_CONTROL_END_THRESHOLD:
++		val->intval = battmgr->info.charge_control_limit;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
++		val->intval = battmgr->info.charge_control_limit_max;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+ 
+@@ -515,6 +525,44 @@ static int qcom_battmgr_bat_get_property(struct power_supply *psy,
+ 	return 0;
+ }
+ 
++static int qcom_battmgr_bat_set_property(struct power_supply *psy,
++					 enum power_supply_property psp,
++					 const union power_supply_propval *val)
++{
++	struct qcom_battmgr *battmgr = power_supply_get_drvdata(psy);
++	unsigned int prop;
++	int ret;
++
++	if (!battmgr->service_up)
++		return -EAGAIN;
++
++	if (psp != POWER_SUPPLY_PROP_CHARGE_CONTROL_END_THRESHOLD)
++		return -EINVAL;
++
++	if (val->intval < 0 || val->intval > 100)
++		return -EINVAL;
++
++	if (psp >= ARRAY_SIZE(sm8350_bat_prop_map))
++		return -EINVAL;
++
++	prop = sm8350_bat_prop_map[psp];
++
++	mutex_lock(&battmgr->lock);
++	ret = qcom_battmgr_request_property(battmgr, BATTMGR_BAT_PROPERTY_SET, prop, val->intval);
++	if (!ret)
++		battmgr->info.charge_control_limit = val->intval;
++	mutex_unlock(&battmgr->lock);
++
++	return ret;
++}
++
++static int qcom_battmgr_bat_property_is_writeable(struct power_supply *psy,
++						  enum power_supply_property psp)
++{
++	return psp == POWER_SUPPLY_PROP_CHARGE_CONTROL_END_THRESHOLD;
++}
++
+ static const enum power_supply_property sc8280xp_bat_props[] = {
+ 	POWER_SUPPLY_PROP_STATUS,
+ 	POWER_SUPPLY_PROP_PRESENT,
+@@ -550,12 +598,16 @@ static const enum power_supply_property sm8350_bat_props[] = {
+ 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
+ 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
+ 	POWER_SUPPLY_PROP_POWER_NOW,
++	POWER_SUPPLY_PROP_CHARGE_CONTROL_END_THRESHOLD,
++	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
+ };
+ 
+ static const struct power_supply_desc sm8350_bat_psy_desc = {
+ 	.name = "qcom-battmgr-bat",
+ 	.type = POWER_SUPPLY_TYPE_BATTERY,
+ 	.properties = sm8350_bat_props,
+ 	.num_properties = ARRAY_SIZE(sm8350_bat_props),
+ 	.get_property = qcom_battmgr_bat_get_property,
++	.set_property = qcom_battmgr_bat_set_property,
++	.property_is_writeable = qcom_battmgr_bat_property_is_writeable,
+ };
+@@ -879,6 +931,27 @@ static void qcom_battmgr_sm8350_callback(struct qcom_battmgr *battmgr,
+ 		case BATT_POWER_NOW:
+ 			battmgr->status.power_now = le32_to_cpu(resp->intval.value);
+ 			break;
++		case BATT_CHG_CTRL_LIM:
++			battmgr->info.charge_control_limit = le32_to_cpu(resp->intval.value);
++			break;
++		case BATT_CHG_CTRL_LIM_MAX:
++			battmgr->info.charge_control_limit_max = le32_to_cpu(resp->intval.value);
++			break;
++		default:
++			dev_warn(battmgr->dev, "unknown property %#x\n", property);
++			break;
++		}
++		break;
++	case BATTMGR_BAT_PROPERTY_SET:
++		property = le32_to_cpu(resp->intval.property);
++		if (payload_len != sizeof(resp->intval)) {
++			dev_warn(battmgr->dev,
++				 "invalid payload length for property set request %#x: %zd\n",
++				 property, payload_len);
++			battmgr->error = -ENODATA;
++			return;
++		}
++		battmgr->error = le32_to_cpu(resp->intval.result);
++		if (battmgr->error)
++			goto out_complete;
++		break;
+ 	case BATTMGR_USB_PROPERTY_GET:

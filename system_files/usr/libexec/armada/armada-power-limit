@@ -4,25 +4,28 @@ set -u
 
 # This is hard coded to where the decky plugin uses it. If you use it in your own project, change the config
 CONFIG_FILE="/var/home/armada/.config/armada/power-limit.conf"
+
+# Create the config file if it doesn't exist, set it to 100 for default.
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "100" > "$CONFIG_FILE"
+fi
+
 POWER_SUPPLY_PATH="/sys/class/power_supply/"
 shopt -s nullglob
-CHARGE_EXTENSIONS=()
-for battery_dir in "$POWER_SUPPLY_PATH"*; do
-    battery_name=${battery_dir##*/}
-    [[ ${battery_name,,} == *bat* ]] && CHARGE_EXTENSIONS+=("$battery_name")
-done
+CHARGE_EXTENSION_NUM=$(ls "$POWER_SUPPLY_PATH" | grep -i "bat" | wc -l | tr -d ' ')
+CHARGE_EXTENSION=$(ls "$POWER_SUPPLY_PATH" | grep -i "bat" | head -n 1)
 LOWER_LIMIT=100000
 
 # Error handling first
-if (( ${#CHARGE_EXTENSIONS[@]} == 0 )); then
+if  [[ $CHARGE_EXTENSION_NUM == 0 ]] ; then
     printf 'Error: no battery found under %s\n' "$POWER_SUPPLY_PATH" >&2
     exit 1
-elif (( ${#CHARGE_EXTENSIONS[@]} > 1 )); then
-    printf 'Error: found %d batteries under %s; refusing to choose one\n' "${#CHARGE_EXTENSIONS[@]}" "$POWER_SUPPLY_PATH" >&2
+elif [[ $CHARGE_EXTENSION_NUM > 1 ]]; then
+    printf 'Error: found %d batteries under %s; refusing to choose one\n' "$CHARGE_EXTENSION_NUM" "$POWER_SUPPLY_PATH" >&2
     exit 1
 fi
 
-BAT_PATH="$POWER_SUPPLY_PATH${CHARGE_EXTENSIONS[0]}"
+BAT_PATH="$POWER_SUPPLY_PATH$CHARGE_EXTENSION"
 BATTERY_CHARGE="$BAT_PATH/capacity"
 CHARGE_CURRENT_MAX="$BAT_PATH/constant_charge_current_max"
 POLL_INTERVAL="30"

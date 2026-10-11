@@ -18,7 +18,7 @@ from .system import (
     ssh_enabled,
     swipe_gestures_enabled,
 )
-from .power_limiter import power_charge_limit
+from .power_limiter import power_charge_limit, power_charge_limit_supported
 from .tweaks import (
     fex_profile_labels,
     load_env_presets,
@@ -59,6 +59,7 @@ def build_config(include_games=True):
         "bottomScreenBrightnessSupported": secondary_brightness is not None,
         "bottomScreenActive": bottom_screen_active(),
         "bottomScreenBrightness": secondary_brightness or 0,
+        "powerChargeLimitSupported": power_charge_limit_supported(),
         "powerChargeLimit": power_charge_limit or 100,
         "chargingFanPwm": int(power["fan"].get("charging_pwm", 0)),
         "sshEnabled": ssh_enabled(),

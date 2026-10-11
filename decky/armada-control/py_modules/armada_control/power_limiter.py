@@ -6,10 +6,30 @@ from pathlib import Path
 
 
 CONFIG_PATH = Path("/var/home/armada/.config/armada/power-limit.conf")
+POWER_SUPPLY_PATH = Path("/sys/class/power_supply")
 DEFAULT_LIMIT = 100
 MIN_LIMIT = 50
 MAX_LIMIT = 100
 LIMIT_STEP = 5
+
+
+def power_charge_limit_supported():
+    try:
+        batteries = [
+            path
+            for path in POWER_SUPPLY_PATH.iterdir()
+            if "bat" in path.name.lower()
+        ]
+    except OSError:
+        return False
+    if len(batteries) != 1:
+        return False
+
+    battery_path = batteries[0]
+    return all(
+        (battery_path / attribute).is_file()
+        for attribute in ("capacity", "constant_charge_current", "constant_charge_current_max")
+    )
 
 
 def power_charge_limit():

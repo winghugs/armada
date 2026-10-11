@@ -209,14 +209,16 @@ export function Settings({ config, setConfig }: {
         <ButtonRow layout="below" onClick={openCalibration}>{t("calibration.launch")}</ButtonRow>
       </PanelSection>
       <PanelSection title={t("settings.system")}>
-        <SliderEdit
-          label={t("settings.powerChargeLimit")}
-          value={config.powerChargeLimit}
-          min={50}
-          max={100}
-          step={5}
-          onChange={setPowerChargeLimit}
-        />
+        {config.powerChargeLimitSupported && (
+          <SliderEdit
+            label={t("settings.powerChargeLimit")}
+            value={config.powerChargeLimit}
+            min={50}
+            max={100}
+            step={5}
+            onChange={setPowerChargeLimit}
+          />
+        )}
         <ToggleRow
           label={t("settings.swipeGestures")}
           description={t("settings.swipeGesturesDescription")}

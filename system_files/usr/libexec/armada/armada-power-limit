@@ -19,10 +19,10 @@ LOWER_LIMIT=100000
 # Error handling first
 if  [[ $CHARGE_EXTENSION_NUM == 0 ]] ; then
     printf 'Error: no battery found under %s\n' "$POWER_SUPPLY_PATH" >&2
-    exit 1
+    exit 0
 elif [[ $CHARGE_EXTENSION_NUM > 1 ]]; then
     printf 'Error: found %d batteries under %s; refusing to choose one\n' "$CHARGE_EXTENSION_NUM" "$POWER_SUPPLY_PATH" >&2
-    exit 1
+    exit 0
 fi
 
 BAT_PATH="$POWER_SUPPLY_PATH$CHARGE_EXTENSION"
@@ -34,7 +34,7 @@ CURRENT_LIMIT=$(cat "$CONFIG_FILE")
 # Error handling second
 if [[ ! -f "$BAT_PATH/capacity" || ! -f "$BAT_PATH/constant_charge_current" || ! -f "$BAT_PATH/constant_charge_current_max" ]]; then
     printf "Error: the battery doesn't have the expected configuration under %s\n" "$BAT_PATH" >&2
-    exit 1
+    exit 0
 fi
 
 # This should stay alive forever, unless we don't have permissions 

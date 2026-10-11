@@ -5,7 +5,7 @@ After=local-fs.target
 [Service]
 Type=simple
 ExecStart=/usr/libexec/armada/armada-power-limit
-Restart=always
+Restart=OnFailure
 RestartSec=5
 
 [Install]

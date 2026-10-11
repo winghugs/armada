@@ -59,7 +59,7 @@ def build_config(include_games=True):
         "bottomScreenBrightnessSupported": secondary_brightness is not None,
         "bottomScreenActive": bottom_screen_active(),
         "bottomScreenBrightness": secondary_brightness or 0,
-        "powerChargeLimit": power_charge_limit or 0,
+        "powerChargeLimit": power_charge_limit or 100,
         "chargingFanPwm": int(power["fan"].get("charging_pwm", 0)),
         "sshEnabled": ssh_enabled(),
         "swipeGesturesEnabled": swipe_gestures_enabled(),

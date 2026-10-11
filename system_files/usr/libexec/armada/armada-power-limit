@@ -5,28 +5,32 @@ set -u
 # This is hard coded to where the decky plugin uses it. If you use it in your own project, change the config
 CONFIG_FILE="/var/home/armada/.config/armada/power-limit.conf"
 POWER_SUPPLY_PATH="/sys/class/power_supply/"
-CHARGE_EXTENSION=$(ls /sys/class/power_supply | grep -i "bat")
+shopt -s nullglob
+CHARGE_EXTENSIONS=()
+for battery_dir in "$POWER_SUPPLY_PATH"*; do
+    battery_name=${battery_dir##*/}
+    [[ ${battery_name,,} == *bat* ]] && CHARGE_EXTENSIONS+=("$battery_name")
+done
 LOWER_LIMIT=100000
 
 # Error handling first
-if (( ${#CHARGE_EXTENSION[@]} == 0 )); then
+if (( ${#CHARGE_EXTENSIONS[@]} == 0 )); then
     printf 'Error: no battery found under %s\n' "$POWER_SUPPLY_PATH" >&2
     exit 1
-elif (( ${#CHARGE_EXTENSION[@]} > 1 )); then
-    printf 'Error: found %d batteries under %s; refusing to choose one\n' \
-        "${#CHARGE_EXTENSION[@]}" "$POWER_SUPPLY_PATH" >&2
+elif (( ${#CHARGE_EXTENSIONS[@]} > 1 )); then
+    printf 'Error: found %d batteries under %s; refusing to choose one\n' "${#CHARGE_EXTENSIONS[@]}" "$POWER_SUPPLY_PATH" >&2
     exit 1
 fi
 
-BAT_PATH="$POWER_SUPPLY_PATH\/$CHARGE_EXTENSION"
+BAT_PATH="$POWER_SUPPLY_PATH${CHARGE_EXTENSIONS[0]}"
 BATTERY_CHARGE="$BAT_PATH/capacity"
 CHARGE_CURRENT_MAX="$BAT_PATH/constant_charge_current_max"
 POLL_INTERVAL="30"
-CURRENT_LIMIT=$("cat $CONFIG_FILE")
+CURRENT_LIMIT=$(cat "$CONFIG_FILE")
 
 # Error handling second
 if [[ ! -f "$BAT_PATH/capacity" || ! -f "$BAT_PATH/constant_charge_current" || ! -f "$BAT_PATH/constant_charge_current_max" ]]; then
-    printf 'Error: the battery doesn't have the exepected configuration under %s\n' "$BAT_PATH" >&2
+    printf "Error: the battery doesn't have the expected configuration under %s\n" "$BAT_PATH" >&2
     exit 1
 fi
 
@@ -34,7 +38,7 @@ fi
 limited=0
 current=""
 while true; do
-    limit=$("cat $CONFIG_FILE") || true
+    limit=$(cat "$CONFIG_FILE") || true
     battery=$(cat "$BATTERY_CHARGE") || true
 
     if [[ "$limit" =~ ^[0-9]+$ && "$battery" =~ ^[0-9]+$ ]]; then

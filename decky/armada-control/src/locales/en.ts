@@ -68,6 +68,8 @@ export const en = {
   "settings.bottomScreenBrightnessError": "Could not change bottom-screen brightness",
   "settings.chargingFanSpeed": "Min Charging Fan Speed",
   "settings.chargingFanSpeedError": "Could not change the charging fan speed",
+  "settings.powerChargeLimit": "Power Limit",
+  "settings.powerChargeLimitError": "Could not change the power limit",
   "settings.desktopMode": "Desktop Mode",
   "settings.usbFileTransfer": "USB File Transfer",
   "settings.enabledUntilShutdown": "Enabled until shutdown",

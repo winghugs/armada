@@ -11,6 +11,7 @@ from armada_control.calibration import (
 from armada_control.config import build_config
 from armada_control.controller import set_controller_type
 from armada_control.power import save_power_config
+from armada_control.power_limiter import set_power_charge_limit
 from armada_control.rgb import get_rgb, set_rgb
 from armada_control.steam import compat_mapped_appids, installed_games
 from armada_control.system import (
@@ -47,6 +48,9 @@ class Plugin:
     async def save_power_config(self, data):
         await asyncio.to_thread(save_power_config, data)
         return await self.get_config()
+
+    async def set_power_charge_limit(self, limit):
+        return await asyncio.to_thread(set_power_charge_limit, limit)
 
     async def save_tweaks(self, data):
         await asyncio.to_thread(save_tweaks, data)

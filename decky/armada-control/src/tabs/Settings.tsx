@@ -12,6 +12,7 @@ import {
   setChargingFanPwm as applyChargingFanPwm,
   setControllerType as applyControllerType,
   setMtpEnabled as applyMtpEnabled,
+  setPowerChargeLimit as applyPowerChargeLimit,
   setDesktopMode as applyDesktopMode,
   setSleepMode as applySleepMode,
   setSleepLogsEnabled as applySleepLogsEnabled,
@@ -28,6 +29,7 @@ import type { Config } from "../types";
 const BOTTOM_SCREEN_BRIGHTNESS_DELAY_MS: number = 150;
 // Each apply reloads armada-powerd.
 const CHARGING_FAN_DELAY_MS: number = 500;
+const POWER_CHARGE_LIMIT_DELAY_MS: number = 500;
 
 export function Settings({ config, setConfig }: {
   config: Config;
@@ -49,6 +51,13 @@ export function Settings({ config, setConfig }: {
     applyChargingFanPwm,
     t("settings.chargingFanSpeedError"),
     CHARGING_FAN_DELAY_MS,
+  );
+  const setPowerChargeLimit = useDebouncedApply(
+    async () => (await getConfig()).powerChargeLimit,
+    (value) => setConfig((current) => (current ? { ...current, powerChargeLimit: value } : current)),
+    applyPowerChargeLimit,
+    t("settings.powerChargeLimitError"),
+    POWER_CHARGE_LIMIT_DELAY_MS,
   );
 
   useEffect(() => {
@@ -200,6 +209,14 @@ export function Settings({ config, setConfig }: {
         <ButtonRow layout="below" onClick={openCalibration}>{t("calibration.launch")}</ButtonRow>
       </PanelSection>
       <PanelSection title={t("settings.system")}>
+        <SliderEdit
+          label={t("settings.powerChargeLimit")}
+          value={config.powerChargeLimit}
+          min={50}
+          max={100}
+          step={5}
+          onChange={setPowerChargeLimit}
+        />
         <ToggleRow
           label={t("settings.swipeGestures")}
           description={t("settings.swipeGesturesDescription")}

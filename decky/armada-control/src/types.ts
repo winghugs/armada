@@ -152,6 +152,7 @@ export interface Config {
   bottomScreenBrightnessSupported: boolean;
   bottomScreenActive: boolean;
   bottomScreenBrightness: number;
+  powerChargeLimit: number;
   chargingFanPwm: number;
   sshEnabled: boolean;
   swipeGesturesEnabled: boolean;

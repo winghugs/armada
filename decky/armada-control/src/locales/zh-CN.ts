@@ -70,6 +70,8 @@ export const zhCN = {
   "settings.bottomScreenBrightnessError": "无法更改下屏亮度",
   "settings.chargingFanSpeed": "充电最低风扇转速",
   "settings.chargingFanSpeedError": "无法更改充电时风扇转速",
+  "settings.powerChargeLimit": "Power Limit",
+  "settings.powerChargeLimitError": "Could not change the power limit",
   "settings.desktopMode": "桌面模式",
   "settings.usbFileTransfer": "USB 文件传输",
   "settings.enabledUntilShutdown": "已启用，关机后停用",
